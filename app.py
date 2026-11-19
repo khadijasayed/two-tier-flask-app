@@ -8,11 +8,11 @@ app = Flask(__name__)
 
 # Configure MySQL from environment variables
 DB_CONFIG = {
-    'host': os.environ.get('MYSQL_HOST', 'localhost'),
+    'host': os.environ.get('MYSQL_HOST', 'mysql'),
     'port': int(os.environ.get('MYSQL_PORT', '3306')),
-    'user': os.environ.get('MYSQL_USER', 'default_user'),
-    'password': os.environ.get('MYSQL_PASSWORD', 'default_password'),
-    'database': os.environ.get('MYSQL_DB', 'default_db'),
+    'user': os.environ.get('MYSQL_USER', 'user'),
+    'password': os.environ.get('MYSQL_PASSWORD', 'password'),
+    'database': os.environ.get('MYSQL_DB', 'testdb'),
 }
 
 
