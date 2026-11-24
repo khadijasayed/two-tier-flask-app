@@ -20,7 +20,7 @@ services:
 
   flask-app:
     build: .
-    image: khadijasayed/flask-app:10
+    image: khadijasayed/flask-app:11
     container_name: flask-app
     ports:
       - "5000:5000"
