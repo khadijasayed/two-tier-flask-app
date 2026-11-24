@@ -1,68 +1,47 @@
-@Library("Shared") _
-pipeline{
-    
-    agent { label "dev"};
-    
-    stages{
-        stage("Code Clone"){
-            steps{
-               script{
-                   clone("https://github.com/LondheShubham153/two-tier-flask-app.git", "master")
-               }
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'flask-app'
+        IMAGE_TAG  = "latest"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', url: 'https://github.com/khadijasayed/two-tier-flask-app/'
             }
         }
-        stage("Trivy File System Scan"){
-            steps{
-                script{
-                    trivy_fs()
+
+        stage('Build Docker Image') {
+            steps {
+                // Build locally first without hardcoding the Docker Hub username
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        set -e
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker logout
+                        docker rmi ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
-        stage("Build"){
-            steps{
-                sh "docker build -t two-tier-flask-app ."
-            }
-            
-        }
-        stage("Test"){
-            steps{
-                sh """
-                    python3 -m venv .venv
-                    .venv/bin/pip install -q -r requirements-dev.txt
-                    .venv/bin/pytest
-                """
-            }
-            
-        }
-        stage("Push to Docker Hub"){
-            steps{
-                script{
-                    docker_push("dockerHubCreds","two-tier-flask-app")
-                }  
-            }
-        }
-        stage("Deploy"){
-            steps{
-                sh "docker compose up -d --build flask-app"
-            }
-        }
-    }
-
-post{
-        success{
-            script{
-                emailext from: 'mentor@trainwithshubham.com',
-                to: 'mentor@trainwithshubham.com',
-                body: 'Build success for Demo CICD App',
-                subject: 'Build success for Demo CICD App'
-            }
-        }
-        failure{
-            script{
-                emailext from: 'mentor@trainwithshubham.com',
-                to: 'mentor@trainwithshubham.com',
-                body: 'Build Failed for Demo CICD App',
-                subject: 'Build Failed for Demo CICD App'
+        stage('Code Deployed') {
+            steps {
+                // Build locally first without hardcoding the Docker Hub username
+                sh "docker compose up -d --build"
             }
         }
     }
